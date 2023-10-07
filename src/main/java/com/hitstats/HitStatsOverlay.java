@@ -1,4 +1,4 @@
-package com.example;
+package com.hitstats;
 
 import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.Overlay;
@@ -12,15 +12,15 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 
-public class ExampleOverlay extends Overlay {
+public class HitStatsOverlay extends Overlay {
     private final Client client;
-    private final ExamplePlugin plugin;
-    private final ExampleConfig config;
+    private final HitStatsPlugin plugin;
+    private final HitStatsConfig config;
     private final PanelComponent panelComponent = new PanelComponent();
 
 
     @Inject
-    public ExampleOverlay(Client client, ExamplePlugin plugin, ExampleConfig config) {
+    public HitStatsOverlay(Client client, HitStatsPlugin plugin, HitStatsConfig config) {
         this.client = client;
         this.plugin = plugin;
         this.config = config;

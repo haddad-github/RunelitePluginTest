@@ -1,4 +1,4 @@
-package com.example;
+package com.hitstats;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -6,8 +6,8 @@ import net.runelite.client.config.ConfigItem;
 
 import java.awt.*;
 
-@ConfigGroup("com.example")
-public interface ExampleConfig extends Config {
+@ConfigGroup("com.hitstats")
+public interface HitStatsConfig extends Config {
 	@ConfigItem(
 			keyName = "showTotalZeros",
 			name = "Show Total Zeros",

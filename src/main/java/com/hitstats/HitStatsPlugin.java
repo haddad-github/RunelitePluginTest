@@ -1,9 +1,8 @@
-package com.example;
+package com.hitstats;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import net.runelite.api.*;
-import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -23,13 +22,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@PluginDescriptor(name = "Example")
-public class ExamplePlugin extends Plugin {
+@PluginDescriptor(name = "Hit Stats")
+public class HitStatsPlugin extends Plugin {
 	@Inject
 	private Client client;
 
 	@Inject
-	private ExampleConfig config;
+	private HitStatsConfig config;
 
 	@Inject
 	private OverlayManager overlayManager;
@@ -37,7 +36,7 @@ public class ExamplePlugin extends Plugin {
 	@Inject
 	private ConfigManager configManager;
 
-	private ExampleOverlay exampleOverlay;
+	private HitStatsOverlay hitStatsOverlay;
 
 	private int totalZeros = 0;
 	private int totalDamage = 0;
@@ -52,9 +51,9 @@ public class ExamplePlugin extends Plugin {
 
 	@Override
 	protected void startUp() throws Exception {
-		exampleOverlay = new ExampleOverlay(client, this, config);
-		overlayManager.add(exampleOverlay);
-		log.info("Example started!");
+		hitStatsOverlay = new HitStatsOverlay(client, this, config);
+		overlayManager.add(hitStatsOverlay);
+		log.info("Hit Stats started!");
 		startTime = Instant.now();
 		// Schedule a periodic task to save stats
 		executorService.scheduleAtFixedRate(this::saveStatsToFile, 1, 1, TimeUnit.MINUTES);
@@ -62,8 +61,8 @@ public class ExamplePlugin extends Plugin {
 
 	@Override
 	protected void shutDown() throws Exception {
-		overlayManager.remove(exampleOverlay);
-		log.info("Example stopped!");
+		overlayManager.remove(hitStatsOverlay);
+		log.info("Hit Stats stopped!");
 		executorService.shutdown();
 	}
 
@@ -88,19 +87,19 @@ public class ExamplePlugin extends Plugin {
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event) {
-		if (!"com.example".equals(event.getGroup())) {
+		if (!"com.hitstats".equals(event.getGroup())) {
 			return;
 		}
 
 		if ("resetStats".equals(event.getKey())) {
 			resetAllStats();
-			configManager.setConfiguration("com.example", "resetStats", false); // Reset the dummy button
+			configManager.setConfiguration("com.hitstats", "resetStats", false); // Reset the dummy button
 		}
 	}
 
 	@Provides
-	ExampleConfig provideConfig(ConfigManager configManager) {
-		return configManager.getConfig(ExampleConfig.class);
+	HitStatsConfig provideConfig(ConfigManager configManager) {
+		return configManager.getConfig(HitStatsConfig.class);
 	}
 
 	// Getter methods for the overlay to access the stats

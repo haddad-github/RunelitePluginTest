@@ -1,16 +1,16 @@
-package com.example;
+package com.hitstats;
 
 import net.runelite.client.ui.PluginPanel;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-public class ExamplePluginPanel extends PluginPanel  {
+public class HitStatsPluginPanel extends PluginPanel  {
     private final JLabel zerosLabel = new JLabel();
     private final JLabel avgDamageLabel = new JLabel();
     private final JLabel totalDamageLabel = new JLabel();
 
-    public ExamplePluginPanel() {
+    public HitStatsPluginPanel() {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(10, 10, 10, 10));
 
