@@ -7,13 +7,20 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @PluginDescriptor(name = "Example")
@@ -27,6 +34,9 @@ public class ExamplePlugin extends Plugin {
 	@Inject
 	private OverlayManager overlayManager;
 
+	@Inject
+	private ConfigManager configManager;
+
 	private ExampleOverlay exampleOverlay;
 
 	private int totalZeros = 0;
@@ -38,37 +48,31 @@ public class ExamplePlugin extends Plugin {
 
 	private int nonZeroHits = 0;
 
-
+	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	@Override
 	protected void startUp() throws Exception {
-		exampleOverlay = new ExampleOverlay(client, this);
+		exampleOverlay = new ExampleOverlay(client, this, config);
 		overlayManager.add(exampleOverlay);
 		log.info("Example started!");
 		startTime = Instant.now();
+		// Schedule a periodic task to save stats
+		executorService.scheduleAtFixedRate(this::saveStatsToFile, 1, 1, TimeUnit.MINUTES);
 	}
 
 	@Override
 	protected void shutDown() throws Exception {
 		overlayManager.remove(exampleOverlay);
 		log.info("Example stopped!");
+		executorService.shutdown();
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged) {
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
-		}
-	}
-
-	@Subscribe
-	public void onHitsplatApplied(HitsplatApplied event)
-	{
+	public void onHitsplatApplied(HitsplatApplied event) {
 		Actor localPlayer = client.getLocalPlayer();
 		Actor target = localPlayer.getInteracting();
 
-		if (target != null && target == event.getActor())
-		{
+		if (target != null && target == event.getActor() && event.getHitsplat().isMine()) {
 			int damage = event.getHitsplat().getAmount();
 
 			if (damage == 0) {
@@ -82,6 +86,17 @@ public class ExamplePlugin extends Plugin {
 		}
 	}
 
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event) {
+		if (!"com.example".equals(event.getGroup())) {
+			return;
+		}
+
+		if ("resetStats".equals(event.getKey())) {
+			resetAllStats();
+			configManager.setConfiguration("com.example", "resetStats", false); // Reset the dummy button
+		}
+	}
 
 	@Provides
 	ExampleConfig provideConfig(ConfigManager configManager) {
@@ -126,10 +141,55 @@ public class ExamplePlugin extends Plugin {
 		return (double) totalDamage / totalSeconds;
 	}
 
+	public int getNonZeroHits() {
+		return nonZeroHits;
+	}
+
 	public double getAvgDamageExcludingZeros() {
 		return nonZeroHits == 0 ? 0 : (double) totalDamage / nonZeroHits;
 	}
 
+	private void saveStatsToFile() {
+		if (!config.enableLogging()) {
+			return;
+		}
+
+		File logDirectory = new File(config.logFilePath());
+		if (!logDirectory.exists() || !logDirectory.isDirectory()) {
+			log.error("The specified log directory does not exist: {}", config.logFilePath());
+			return;
+		}
+
+		File logFile = new File(logDirectory, "log.txt");
+
+		try (FileWriter writer = new FileWriter(logFile, true)) {
+			if (logFile.length() == 0) {
+				// Add the header if the file is empty
+				writer.append("Timestamp,Total Zeros,Average Damage,Total Damage,Total Hits,Time Elapsed,DPS,Average Damage (excluding 0's)\n");
+			}
+
+			// Write data
+			writer.append(getElapsedTime()).append(",");
+			writer.append(Integer.toString(getTotalZeros())).append(",");
+			writer.append(String.format("%.2f", getAvgDamage())).append(",");
+			writer.append(Integer.toString(getTotalDamage())).append(",");
+			writer.append(Integer.toString(getTotalHits())).append(",");
+			writer.append(getElapsedTime()).append(",");
+			writer.append(String.format("%.2f", getDPS())).append(",");
+			writer.append(String.format("%.2f", getAvgDamageExcludingZeros())).append("\n");
+
+		} catch (IOException e) {
+			log.error("Error writing to log.txt", e);
+		}
+	}
+
+	private void resetAllStats() {
+		totalZeros = 0;
+		totalDamage = 0;
+		totalHits = 0;
+		nonZeroHits = 0;
+		startTime = Instant.now();
+	}
 
 
 }
