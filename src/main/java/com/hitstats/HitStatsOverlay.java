@@ -26,7 +26,8 @@ public class HitStatsOverlay extends Overlay {
         this.config = config;
         setPosition(OverlayPosition.BOTTOM_RIGHT);
         setLayer(OverlayLayer.ABOVE_SCENE);
-        panelComponent.setPreferredSize(new Dimension(250, 0));
+        setMovable(true);
+        panelComponent.setPreferredSize(new Dimension(220, 0));
     }
 
     @Override

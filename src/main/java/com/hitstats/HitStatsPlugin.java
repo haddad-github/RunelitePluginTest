@@ -17,6 +17,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -153,13 +155,19 @@ public class HitStatsPlugin extends Plugin {
 			return;
 		}
 
+		String playerName = client.getLocalPlayer().getName();
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+		String currentDate = LocalDate.now().format(dtf);
+		String fileName = playerName + "_log_" + currentDate + "." + config.fileExtension().toString();
+
 		File logDirectory = new File(config.logFilePath());
 		if (!logDirectory.exists() || !logDirectory.isDirectory()) {
 			log.error("The specified log directory does not exist: {}", config.logFilePath());
 			return;
 		}
 
-		File logFile = new File(logDirectory, "log.txt");
+		File logFile = new File(logDirectory, fileName);
+
 
 		try (FileWriter writer = new FileWriter(logFile, true)) {
 			if (logFile.length() == 0) {

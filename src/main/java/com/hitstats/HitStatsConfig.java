@@ -8,6 +8,32 @@ import java.awt.*;
 
 @ConfigGroup("com.hitstats")
 public interface HitStatsConfig extends Config {
+
+	enum FileExtension {
+		TXT("txt"),
+		CSV("csv");
+
+		private final String name;
+
+		FileExtension(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public String toString() {
+			return name;
+		}
+	}
+
+	@ConfigItem(
+			keyName = "fileExtension",
+			name = "File Extension",
+			description = "Choose the file extension for the log"
+	)
+	default FileExtension fileExtension() {
+		return FileExtension.TXT; // Default to .txt
+	}
+
 	@ConfigItem(
 			keyName = "showTotalZeros",
 			name = "Show Total Zeros",
