@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -49,7 +50,9 @@ public class HitStatsPlugin extends Plugin {
 
 	private int nonZeroHits = 0;
 
-	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+	private ScheduledFuture<?> scheduledTask;
+
+	private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	@Override
 	protected void startUp() throws Exception {
@@ -57,14 +60,30 @@ public class HitStatsPlugin extends Plugin {
 		overlayManager.add(hitStatsOverlay);
 		log.info("Hit Stats started!");
 		startTime = Instant.now();
-		// Schedule a periodic task to save stats
-		executorService.scheduleAtFixedRate(this::saveStatsToFile, 1, 1, TimeUnit.MINUTES);
+
+		saveStatsToFile();  // Immediate file save/check on startup
+
+		// If executor is terminated, reinitialize it
+		if (executorService.isTerminated()) {
+			executorService = Executors.newSingleThreadScheduledExecutor();
+		}
+
+		// Check if executor is shut down
+		if (!executorService.isShutdown()) {
+			scheduledTask = executorService.scheduleAtFixedRate(this::saveStatsToFile, 1, 1, TimeUnit.MINUTES);
+		}
 	}
+
 
 	@Override
 	protected void shutDown() throws Exception {
 		overlayManager.remove(hitStatsOverlay);
 		log.info("Hit Stats stopped!");
+
+		if (scheduledTask != null) {
+			scheduledTask.cancel(false);  // Cancel the scheduled task without interrupting
+		}
+
 		executorService.shutdown();
 	}
 
