@@ -45,6 +45,8 @@ public class HitStatsPlugin extends Plugin {
 
 	private boolean justLoggedIn = false;
 
+	private String lastKnownWeapon = "Unknown";
+
 	private int totalZeros = 0;
 	private int totalDamage = 0;
 	private int totalHits = 0;
@@ -203,15 +205,19 @@ public class HitStatsPlugin extends Plugin {
 		Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
 		if (weapon == null) {
 			log.info("No weapon equipped.");
-			return null;
+			lastKnownWeapon = "None";
+			return "None";
 		}
 
 		ItemComposition weaponComposition = client.getItemDefinition(weapon.getId());
 		log.info("Player is wielding: {}", weaponComposition.getName());
+		lastKnownWeapon = weaponComposition.getName();
 		return weaponComposition.getName();
 	}
 
-
+	public String getLastKnownWeapon() {
+		return lastKnownWeapon;
+	}
 
 	private void saveStatsToFile() {
 		if (!config.enableLogging()) {
@@ -245,7 +251,7 @@ public class HitStatsPlugin extends Plugin {
 		try (FileWriter writer = new FileWriter(logFile, true)) {
 			if (logFile.length() == 0) {
 				// Add the header if the file is empty
-				writer.append("Timestamp,Total Zeros,Average Damage,Total Damage,Total Hits,Time Elapsed,DPS,Average Damage (excluding 0's)\n");
+				writer.append("Timestamp,Total Zeros,Average Damage,Total Damage,Total Hits,Time Elapsed,DPS,Average Damage (excluding 0's),Weapon name\n");
 			}
 
 			// Write data
@@ -256,7 +262,9 @@ public class HitStatsPlugin extends Plugin {
 			writer.append(Integer.toString(getTotalHits())).append(",");
 			writer.append(getElapsedTime()).append(",");
 			writer.append(String.format("%.2f", getDPS())).append(",");
-			writer.append(String.format("%.2f", getAvgDamageExcludingZeros())).append("\n");
+			writer.append(String.format("%.2f", getAvgDamageExcludingZeros())).append(",");
+			writer.append(getLastKnownWeapon()).append("\n");
+
 
 		} catch (IOException e) {
 			log.error("Error writing to log.txt", e);
