@@ -3,6 +3,8 @@ package com.hitstats;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import net.runelite.api.*;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -40,6 +42,8 @@ public class HitStatsPlugin extends Plugin {
 	private ConfigManager configManager;
 
 	private HitStatsOverlay hitStatsOverlay;
+
+	private boolean justLoggedIn = false;
 
 	private int totalZeros = 0;
 	private int totalDamage = 0;
@@ -118,6 +122,21 @@ public class HitStatsPlugin extends Plugin {
 		}
 	}
 
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event) {
+		if (event.getGameState() == GameState.LOGGED_IN) {
+			justLoggedIn = true;  // Set the flag when the user logs in
+		}
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick event) {
+		if (justLoggedIn) {
+			getWeaponName();  // Fetch the weapon name on the tick following login
+			justLoggedIn = false;  // Reset the flag
+		}
+	}
+
 	@Provides
 	HitStatsConfig provideConfig(ConfigManager configManager) {
 		return configManager.getConfig(HitStatsConfig.class);
@@ -168,6 +187,31 @@ public class HitStatsPlugin extends Plugin {
 	public double getAvgDamageExcludingZeros() {
 		return nonZeroHits == 0 ? 0 : (double) totalDamage / nonZeroHits;
 	}
+
+	private String getWeaponName() {
+		if (client == null || client.getLocalPlayer() == null) {
+			log.info("Client or local player is not initialized.");
+			return null;
+		}
+
+		ItemContainer equipment = client.getItemContainer(InventoryID.EQUIPMENT);
+		if (equipment == null) {
+			log.info("Equipment container is null.");
+			return null;
+		}
+
+		Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
+		if (weapon == null) {
+			log.info("No weapon equipped.");
+			return null;
+		}
+
+		ItemComposition weaponComposition = client.getItemDefinition(weapon.getId());
+		log.info("Player is wielding: {}", weaponComposition.getName());
+		return weaponComposition.getName();
+	}
+
+
 
 	private void saveStatsToFile() {
 		if (!config.enableLogging()) {
