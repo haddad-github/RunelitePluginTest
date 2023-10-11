@@ -174,7 +174,17 @@ public class HitStatsPlugin extends Plugin {
 			return;
 		}
 
+		if (client == null || client.getLocalPlayer() == null) {
+			log.error("Client or local player is not initialized.");
+			return;
+		}
+
 		String playerName = client.getLocalPlayer().getName();
+		if (playerName == null) {
+			log.error("Player name is null.");
+			return;
+		}
+
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 		String currentDate = LocalDate.now().format(dtf);
 		String fileName = playerName + "_log_" + currentDate + "." + config.fileExtension().toString();
